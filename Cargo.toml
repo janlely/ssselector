@@ -1,0 +1,33 @@
+[package]
+name = "ssselector"
+version = "0.1.0"
+authors = ["Jay <janlely@163.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
+
+[dependencies]
+pretty_env_logger = "0.4.0"
+log = "0.4.11"
+reqwest = {version = "0.11.0", features = ["blocking"]}
+base64 = "0.13.0"
+rayon = "1.5.0"
+pbr = "1.0.4"
+surge-ping = "0.1.8"
+tokio-ping = "0.3.0"
+tokio = { version = "1.1.1", features = ["full"] }
+dns-lookup = "1.0.5"
+shadowsocks-rust = "1.8.23"
+serde = "1.0.123"
+serde_json = "1.0.61"
+serde_millis = "0.1.1"
+clap = "2.33.3"
+shellexpand = "2.1.0"
+
