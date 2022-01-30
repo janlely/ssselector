@@ -84,19 +84,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proc_id_file = shellexpand::tilde(matches.value_of("process id").unwrap());
     if let Some(url) = matches.value_of("subscribe") {
         do_subscribe(url, &target).await?;
-        write_proc_id(&proc_id_file).await?;
-        let mut stream = signal(SignalKind::hangup())?;
-        loop {
-            let rt = start_ss(target.as_ref()).await?;
-            stream.recv().await;
-            info!("received hangup SIG, select");
-            rt.shutdown_background();
-            inc_index(target.as_ref()).await?;
-        }
+        //write_proc_id(&proc_id_file).await?;
+        //let mut stream = signal(SignalKind::hangup())?;
+        //loop {
+            //let rt = start_ss(target.as_ref()).await?;
+            //stream.recv().await;
+            //info!("received hangup SIG, select");
+            //rt.shutdown_background();
+            //inc_index(target.as_ref()).await?;
+        //}
     }
-    if matches.occurrences_of("select next") > 0 {
-        send_sig(&proc_id_file).await?;
-    }
+    //if matches.occurrences_of("select next") > 0 {
+        //send_sig(&proc_id_file).await?;
+    //}
     Ok(())
 }
 
@@ -160,14 +160,37 @@ fn resolve_ip(hostname: &str) -> String {
     ips.first().unwrap().to_string()
 }
 
+// fn base64_check(link: &str) -> bool {
+//     info!("link: {}", link);
+//     let input = match link {
+//         b if link.starts_with("ssr://") => b.to_string().get(6..).unwrap().to_string(),
+//         b if link.starts_with("ss://")  => b.to_string().get(5..).unwrap().to_string(),
+//         b                               => panic!("unsupported link: {}", b)
+//     };
+//     debug!("check input: {}", input);
+//     let res = base64::decode_config(if input.len() % 4 == 1 {
+//         input.get(0..input.len()-1).unwrap()
+//     } else {
+//         input.as_str()
+//     }, base64::URL_SAFE);
+//     if res.is_err() {
+//         info!("check invalid: {}", link)
+//     }
+//     return res.is_ok();
+// }
+
 fn base64_decode_string(input: &str) -> String {
     debug!("decode input: {}", input);
-    let bs = base64::decode_config(if input.len() % 4 == 1 {
-        input.get(0..input.len()-1).unwrap()
-    } else {
-        input
-    }, base64::URL_SAFE).unwrap();
-    str::from_utf8(bs.as_slice()).unwrap().to_string()
+    // let bs = base64::decode_config(if input.len() % 4 == 1 {
+    //     input.get(0..input.len()-1).unwrap()
+    // } else {
+    //     input
+    // }, base64::URL_SAFE);
+    let bs = base64::decode_config(input, base64::URL_SAFE);
+    if bs.is_err() {
+        panic!("invalid link: {}", input);
+    }
+    str::from_utf8(bs.unwrap().as_slice()).unwrap().to_string()
 }
 
 fn parse_base(input: &str) -> (String, u32, String, String) {
@@ -195,6 +218,7 @@ async fn do_subscribe(url: &str, target: &str) -> Result<(), Box<dyn std::error:
 	info!("parsing ssr link list...");
     let mut configs: Vec<SSConfig> = ssr_links.split('\n').collect::<Vec<&str>>().iter()
     .filter(|link| link.len() > 0)
+    // .filter(|link| base64_check(link))
     .map(|link| {
         let b64 = match link {
             b if link.starts_with("ssr://") => b.to_string().get(6..).unwrap().to_string(),
@@ -202,7 +226,7 @@ async fn do_subscribe(url: &str, target: &str) -> Result<(), Box<dyn std::error:
             b                               => panic!("unsupported link: {}", b)
         };
         let link_string = base64_decode_string(b64.as_str());
-        let base_extend = link_string.split('?').collect::<Vec<&str>>();
+        let base_extend = link_string.split("/?").collect::<Vec<&str>>();
         let (sa, sp, m, ps) = parse_base(base_extend[0]);
         let remark = parse_extend(base_extend[1]);
         SSConfig {
